@@ -34,17 +34,14 @@ main:
     ldr r0,=mensaje_ingreso
     bl puts
 
-    ldr r5,=cantidad_nombre
-    ldr r7,=cantidad_apellido
+    @@ Asignacion de bandera
     ldr r10,=tipo_accion
-    ldr r5,[r5]
-    ldr r7,[r7]
     ldr r10,[r10]
 
 accion:
-    subs r10,#1
-    bpl solicitud
-    bmi salir
+    subs r10,#1 @@ determinar que accion se debe de realizar
+    bpl solicitud @@ solicitud de datos
+    bmi salir @@ analisis de datos
 
 solicitud:
     cmp r10,#1
@@ -67,15 +64,19 @@ tamano:
     ldrb r1,[r4],#1
     cmp r1,#0
     bne tamano
-    sub r5,#1
-    sub r7,#1
-    str r5,[r5]
-    str r7,[r7]
 
     cmp r10,#1
-    ldreq r9,=cantidad_nombre
-    ldrne r9,=cantidad_apellido
+    subeq r5,#2
+    subne r7,#2
 
+ultima:
+    cmp r10,#1
+    ldreq r4,=nombre
+    ldreq r6,[r5,r4]
+    ldrne r4,=apellido
+    ldrne r8,[r7,r4]
+    b accion
+/*
 vocales:
     ldrb r1,[r4],#1
     cmp r1,#65
@@ -83,7 +84,7 @@ vocales:
     subs r9,#1
     beq accion 
     bne vocales 
-
+*/
 salir:
     @@print
 	ldr r0,=formato_string
@@ -93,6 +94,15 @@ salir:
     ldr r0,=formato_string
 	ldr r1,=apellido
 	bl printf
+
+    ldr r0,=formato_char
+	mov r1,r6
+	bl printf
+
+    ldr r0,=formato_string
+	mov r1,r8
+	bl printf
+
 
     ldr r0,=formato_d
 	mov r1,r5
