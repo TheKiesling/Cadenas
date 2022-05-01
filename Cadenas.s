@@ -25,7 +25,6 @@
 .global main
 .type main,%function
 
-/* ---------------- MAIN ---------------- */ 
 main:
     @@ grabar registro de enlace en la pila
 	stmfd sp!, {lr}	/* SP = R13 link register = R14*/
@@ -39,7 +38,7 @@ main:
 accion:
     subs r10,#1 @@ determinar que accion se debe de realizar
     bpl solicitud @@ solicitud de datos
-    bmi salir @@ analisis de datos
+    bmi analisis @@ analisis de datos
 
 solicitud:
     @@ comparador que analiza que tipo de dato debe de pedir
@@ -127,46 +126,57 @@ vocales:
     ldreq r1,=vocales_nombre
     ldrne r1,=vocales_apellido
     str r7,[r1]
-    mov r1,r7
     mov r7,#0
-
-    
-	ldr r0,=formato_d
-	bl printf
 
     b accion
 
-salir:
+analisis:
+    ldr r0,=criterios
+    bl puts
+
+    @@ Ambos nombre y apellido tienen la misma cantidad de letras 
     ldr r1,=cantidad_nombre
     ldr r1,[r1]
-	ldr r0,=formato_d
-	bl printf
+    ldr r2,=cantidad_apellido
+    ldr r2,[r2]
+    cmp r1,r2
+    addeq r8,#1
+    ldr r0,=primer_criterio
+    bl printf
 
-    ldr r1,=cantidad_apellido
-    ldr r1,[r1]
-    ldr r0,=formato_d
-	bl printf
-
-    ldr r1,=ultima_nombre
-    ldr r1,[r1]
-    ldr r0,=formato_char
-	bl printf
-
-    ldr r1,=ultima_apellido
-    ldr r1,[r1]
-    ldr r0,=formato_char
-	bl printf
-
+    @@ Ambos nombre y apellido tienen el mismo número de vocales 
     ldr r1,=vocales_nombre
     ldr r1,[r1]
-	ldr r0,=formato_d
-	bl printf
+    ldr r2,=vocales_apellido
+    ldr r2,[r2]
+    cmp r1,r2
+    addeq r8,#1
+    ldr r0,=segundo_criterio
+    bl printf
 
-    ldr r1,=vocales_apellido
+    @@ Ambos nombre y apellido tienen el mismo número de vocales 
+    ldr r1,=ultima_nombre
     ldr r1,[r1]
-	ldr r0,=formato_d
-	bl printf
+    ldr r2,=ultima_apellido
+    ldr r2,[r2]
+    cmp r1,r2
+    addeq r8,#1
+    ldr r0,=tercer_criterio
+    bl printf
 
+    @@ Guardar punteo
+    ldr r1,=punteo
+    str r8,[r1]
+
+    @@ Imprimir punteo 
+    ldr r1,=punteo
+    ldr r1,[r1]
+    cmp r1,#2
+    ldrpl r0,=aprobado
+    ldrmi r0,=reprobado
+    bl printf
+
+salir:
     @@salida segura
     mov r0, #0
     mov r3, #0
@@ -182,10 +192,10 @@ nombre: .asciz "                    "
 apellido: .asciz "                    "
 cantidad_nombre: .word 0
 cantidad_apellido: .word 0
-ultima_nombre: .byte 0
-ultima_apellido: .byte 0
 vocales_nombre: .word 0
 vocales_apellido: .word 0
+ultima_nombre: .word 0
+ultima_apellido: .word 0
 punteo: .word 0
 
 /*-- Mensajes --*/
@@ -200,4 +210,16 @@ mensaje_ingreso:
 ingreso_nombre:
 	.asciz "Ingrese el nombre del Bebe: "
 ingreso_apellido:
-    .asciz "Ingrese el apellido del Bebe"
+    .asciz "\nIngrese el apellido del Bebe: "
+criterios:
+    .asciz "\n --- ANALISIS DE CRITERIOS --- \n"
+primer_criterio:
+    .asciz "Cantidad de letras de \n Nombre: %d \n Apellido: %d\n"
+segundo_criterio:
+    .asciz "\nCantidad de vocales de \n Nombre: %d \n Apellido: %d\n"
+tercer_criterio:
+    .asciz "\nUltima letra de \n Nombre: %c \n Apellido: %c\n"
+aprobado:
+    .asciz "\nEl nombre tiene %d puntos, esta aprobado\n"
+reprobado:
+    .asciz "\nEl nombre tiene %d puntos, intente un nuevo nombre\n"
