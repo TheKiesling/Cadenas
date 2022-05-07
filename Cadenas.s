@@ -21,17 +21,15 @@
 
 /* --------------------------------------- TEXT --------------------------------------- */
 .text
-.align 2
 .global main
-.type main,%function
-
 main:
-    @@ grabar registro de enlace en la pila
-	stmfd sp!, {lr}	/* SP = R13 link register = R14*/
-
     @@ Bienvenida al programa
-    ldr r0,=mensaje_ingreso
-    bl puts
+    /*--- SWI ---*/
+    mov r7,#4
+    mov r0,#1
+    mov r2,#40
+    ldr r1,=mensaje_ingreso
+    swi 0
 
     mov r10,#2
 
@@ -41,35 +39,45 @@ accion:
     bmi analisis @@ analisis de datos
 
 solicitud:
+    /*--- SWI ---*/
+    mov r7,#4
+    mov r0,#1
     @@ comparador que analiza que tipo de dato debe de pedir
     @@ se usa en todo el programa, indicando el dato que se analiza
     cmp r10,#1 
-    ldreq r0,=ingreso_nombre
-    ldrne r0,=ingreso_apellido
-    bl puts
-
+    moveq r2,#28
+    ldreq r1,=ingreso_nombre
+    movne r2,#31
+    ldrne r1,=ingreso_apellido
+    swi 0
+    
     @@ solicitud de datos
-	ldr r0,=formato_string
+	/*--- SWI ---*/
+    mov r7,#3
+    mov r0,#0
+    mov r2,#20
     cmp r10,#1
 	ldreq r1,=nombre
     ldreq r4,=nombre
     ldrne r1,=apellido
     ldrne r4,=apellido
-	bl scanf
+    swi 0
+
+    mov r5,#0
 
 tamano:
     @@ recorrer cadena hasta encontrar un valor null
     ldrb r1,[r4],#1
-    cmp r1,#0
+    cmp r1,#32
     addne r5,#1
     bne tamano
+    sub r5,#1
 
     @@ guardar el tamano del nombre o apellido, según sea el caso
     cmp r10,#1
     ldreq r1,=cantidad_nombre
     ldrne r1,=cantidad_apellido
     str r5,[r1]
-    mov r5,#0
     
 ultima:
     cmp r10,#1
@@ -90,6 +98,7 @@ ultima:
     str r6,[r1]
 
     add r9,#1
+    mov r5,#0
 
 vocales:
     @@ recorrer toda la cadena post order
@@ -97,25 +106,25 @@ vocales:
 
     @@ comparacion con caracteres segun codigo ASCII
     cmp r1,#65 @@ A
-    addeq r7,#1
+    addeq r5,#1
     cmp r1,#69 @@ E
-    addeq r7,#1
+    addeq r5,#1
     cmp r1,#73 @@ I
-    addeq r7,#1
+    addeq r5,#1
     cmp r1,#79 @@ O
-    addeq r7,#1
+    addeq r5,#1
     cmp r1,#85 @@ U
-    addeq r7,#1
+    addeq r5,#1
     cmp r1,#97 @@ a
-    addeq r7,#1
+    addeq r5,#1
     cmp r1,#101 @@ e
-    addeq r7,#1
+    addeq r5,#1
     cmp r1,#105 @@ i
-    addeq r7,#1
+    addeq r5,#1
     cmp r1,#111 @@ o
-    addeq r7,#1
+    addeq r5,#1
     cmp r1,#117 @@ u
-    addeq r7,#1
+    addeq r5,#1
 
     @@ decremento y autoanalisis del tamano de la cadena
     subs r9,#1 
@@ -125,14 +134,17 @@ vocales:
     cmp r10,#1
     ldreq r1,=vocales_nombre
     ldrne r1,=vocales_apellido
-    str r7,[r1]
-    mov r7,#0
-
+    str r5,[r1]
+    
     b accion
 
 analisis:
-    ldr r0,=criterios
-    bl puts
+    /*--- SWI ---*/
+    mov r7,#4
+    mov r0,#1
+    mov r2,#34
+    ldr r1,=criterios
+    swi 0
 
     @@ Ambos nombre y apellido tienen la misma cantidad de letras 
     ldr r1,=cantidad_nombre
@@ -178,10 +190,8 @@ analisis:
 
 salir:
     @@salida segura
-    mov r0, #0
-    mov r3, #0
-    ldmfd sp!, {lr}
-    bx lr
+    mov r7,#1
+    swi 0
 
 /* --------------------------------------- DATA --------------------------------------- */
 .data
@@ -201,16 +211,12 @@ punteo: .word 0
 /*-- Mensajes --*/
 formato_string:
 	.asciz " %s"
-formato_char:
-    .asciz " %c"
-formato_d:
-    .asciz " %d"
 mensaje_ingreso: 
-    .asciz "Bienvenido a su programa MiPrimerBebe.com"
+    .asciz "Bienvenido a su programa MiPrimerBb.com\n"
 ingreso_nombre:
-	.asciz "Ingrese el nombre del Bebe: "
+	.asciz "Ingrese el nombre del Bebe:\n"
 ingreso_apellido:
-    .asciz "\nIngrese el apellido del Bebe: "
+    .asciz "\nIngrese el apellido del Bebe:\n"
 criterios:
     .asciz "\n --- ANALISIS DE CRITERIOS --- \n"
 primer_criterio:
