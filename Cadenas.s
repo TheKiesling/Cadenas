@@ -25,173 +25,139 @@
 main:
     @@ Bienvenida al programa
     /*--- SWI ---*/
-    mov r7,#4
-    mov r0,#1
-    mov r2,#40
-    ldr r1,=mensaje_ingreso
+    mov r7,#4 @ write
+    mov r0,#1 @ pantalla
+    mov r2,#40 @ tamano de cadena
+    ldr r1,=mensaje_ingreso @ mensaje a imprimir
     swi 0
 
     mov r10,#2
 
-accion:
-    subs r10,#1 @@ determinar que accion se debe de realizar
-    bpl solicitud @@ solicitud de datos
-    bmi analisis @@ analisis de datos
+    @@ determinar que accion se debe de realizar
+    accion:
+        subs r10,#1 
+        bpl solicitud @@ solicitud de datos
+        bmi analisis @@ analisis de datos
 
-solicitud:
-    /*--- SWI ---*/
-    mov r7,#4
-    mov r0,#1
-    @@ comparador que analiza que tipo de dato debe de pedir
-    @@ se usa en todo el programa, indicando el dato que se analiza
-    cmp r10,#1 
-    moveq r2,#28
-    ldreq r1,=ingreso_nombre
-    movne r2,#31
-    ldrne r1,=ingreso_apellido
-    swi 0
-    
-    @@ solicitud de datos
-	/*--- SWI ---*/
-    mov r7,#3
-    mov r0,#0
-    mov r2,#20
-    cmp r10,#1
-	ldreq r1,=nombre
-    ldreq r4,=nombre
-    ldrne r1,=apellido
-    ldrne r4,=apellido
-    swi 0
+    @@ solictar el nombre o el apellido segun sea el caso
+    solicitud:
+        /*--- SWI ---*/
+        mov r7,#4 @ write
+        mov r0,#1 @ pantalla
+        @@ comparador que analiza que tipo de dato debe de pedir
+        @@ se usa en todo el programa, indicando el dato que se analiza
+        cmp r10,#1 
+        moveq r2,#28 @ tamano de cadena
+        ldreq r1,=ingreso_nombre @ mensaje a imprimir
+        movne r2,#31 @ tamano de cadena
+        ldrne r1,=ingreso_apellido @ mensaje a imprimir
+        swi 0
+        
+        @@ solicitud de datos
+        /*--- SWI ---*/
+        mov r7,#3 @ read
+        mov r0,#0 @ teclado
+        mov r2,#20 @ tamano de la cadena
+        cmp r10,#1
+        ldreq r1,=nombre @ variable donde se carga
+        ldreq r4,=nombre
+        ldrne r1,=apellido @ variable donde se carga
+        ldrne r4,=apellido
+        swi 0
 
+    @ determinar el tamano de la cadena
     mov r5,#0
+    bl _tamano
 
-tamano:
-    @@ recorrer cadena hasta encontrar un valor null
-    ldrb r1,[r4],#1
-    cmp r1,#32
-    addne r5,#1
-    bne tamano
-    sub r5,#1
-
-    @@ guardar el tamano del nombre o apellido, según sea el caso
+    @@ guardar el tamano de la cadena
     cmp r10,#1
     ldreq r1,=cantidad_nombre
     ldrne r1,=cantidad_apellido
     str r5,[r1]
     
-ultima:
+    @ preparar registros en r4 cadena, y en r9 tamano
     cmp r10,#1
     ldreq r4,=nombre
     ldreq r9,=cantidad_nombre
     ldrne r4,=apellido
     ldrne r9,=cantidad_apellido
-
-    @@ recorrer la cadena pre order
     ldr r9,[r9]
-    sub r9,#1
-    ldr r6,[r9,r4]
-    
+    bl _ultima @ ultimo caracter no vacio de la cadena
+
     @@ guardar el ultimo caracter no vacio de la cadena
     cmp r10,#1
     ldreq r1,=ultima_nombre
     ldrne r1,=ultima_apellido
     str r6,[r1]
 
+    @ determinar la cantidad de vocales en la cadena
     add r9,#1
-    mov r5,#0
-
-vocales:
-    @@ recorrer toda la cadena post order
-    ldrb r1,[r4],#1
-
-    @@ comparacion con caracteres segun codigo ASCII
-    cmp r1,#65 @@ A
-    addeq r5,#1
-    cmp r1,#69 @@ E
-    addeq r5,#1
-    cmp r1,#73 @@ I
-    addeq r5,#1
-    cmp r1,#79 @@ O
-    addeq r5,#1
-    cmp r1,#85 @@ U
-    addeq r5,#1
-    cmp r1,#97 @@ a
-    addeq r5,#1
-    cmp r1,#101 @@ e
-    addeq r5,#1
-    cmp r1,#105 @@ i
-    addeq r5,#1
-    cmp r1,#111 @@ o
-    addeq r5,#1
-    cmp r1,#117 @@ u
-    addeq r5,#1
-
-    @@ decremento y autoanalisis del tamano de la cadena
-    subs r9,#1 
-    bne vocales 
+    mov r6,#0
+    bl _vocales
 
     @@ guardar cantidad de vocales
     cmp r10,#1
     ldreq r1,=vocales_nombre
     ldrne r1,=vocales_apellido
-    str r5,[r1]
+    str r6,[r1]
     
+    @ regresar a verificar la siguiente accion
     b accion
 
-analisis:
-    /*--- SWI ---*/
-    mov r7,#4
-    mov r0,#1
-    mov r2,#34
-    ldr r1,=criterios
-    swi 0
+    @ analisis de las propiedades del nombre y apellido
+    analisis:
+        /*--- SWI ---*/
+        mov r7,#4 @ write
+        mov r0,#1 @ pantalla
+        mov r2,#34 @ tamano de la cadena
+        ldr r1,=criterios @ mensaje a imprimir
+        swi 0
 
-    @@ Ambos nombre y apellido tienen la misma cantidad de letras 
-    ldr r1,=cantidad_nombre
-    ldr r1,[r1]
-    ldr r2,=cantidad_apellido
-    ldr r2,[r2]
-    cmp r1,r2
-    addeq r8,#1
-    ldr r0,=primer_criterio
-    bl printf
+        @@ Ambos nombre y apellido tienen la misma cantidad de letras 
+        ldr r1,=cantidad_nombre
+        ldr r1,[r1]
+        ldr r2,=cantidad_apellido
+        ldr r2,[r2]
+        cmp r1,r2
+        addeq r8,#1
+        ldr r0,=primer_criterio
+        bl printf
 
-    @@ Ambos nombre y apellido tienen el mismo número de vocales 
-    ldr r1,=vocales_nombre
-    ldr r1,[r1]
-    ldr r2,=vocales_apellido
-    ldr r2,[r2]
-    cmp r1,r2
-    addeq r8,#1
-    ldr r0,=segundo_criterio
-    bl printf
+        @@ Ambos nombre y apellido tienen el mismo número de vocales 
+        ldr r1,=vocales_nombre
+        ldr r1,[r1]
+        ldr r2,=vocales_apellido
+        ldr r2,[r2]
+        cmp r1,r2
+        addeq r8,#1
+        ldr r0,=segundo_criterio
+        bl printf
 
-    @@ Ambos nombre y apellido tienen el mismo número de vocales 
-    ldr r1,=ultima_nombre
-    ldr r1,[r1]
-    ldr r2,=ultima_apellido
-    ldr r2,[r2]
-    cmp r1,r2
-    addeq r8,#1
-    ldr r0,=tercer_criterio
-    bl printf
+        @@ Ambos nombre y apellido tienen la misma última letra
+        ldr r1,=ultima_nombre
+        ldr r1,[r1]
+        ldr r2,=ultima_apellido
+        ldr r2,[r2]
+        cmp r1,r2
+        addeq r8,#1
+        ldr r0,=tercer_criterio
+        bl printf
 
-    @@ Guardar punteo
-    ldr r1,=punteo
-    str r8,[r1]
+        @@ Guardar punteo
+        ldr r1,=punteo
+        str r8,[r1]
 
-    @@ Imprimir punteo 
-    ldr r1,=punteo
-    ldr r1,[r1]
-    cmp r1,#2
-    ldrpl r0,=aprobado
-    ldrmi r0,=reprobado
-    bl printf
+        @@ Imprimir punteo 
+        ldr r1,=punteo
+        ldr r1,[r1]
+        cmp r1,#2
+        ldrpl r0,=aprobado
+        ldrmi r0,=reprobado
+        bl printf
 
-salir:
-    @@salida segura
-    mov r7,#1
-    swi 0
+        @@salida segura
+        mov r7,#1
+        swi 0
 
 /* --------------------------------------- DATA --------------------------------------- */
 .data
@@ -209,8 +175,6 @@ ultima_apellido: .word 0
 punteo: .word 0
 
 /*-- Mensajes --*/
-formato_string:
-	.asciz " %s"
 mensaje_ingreso: 
     .asciz "Bienvenido a su programa MiPrimerBb.com\n"
 ingreso_nombre:
